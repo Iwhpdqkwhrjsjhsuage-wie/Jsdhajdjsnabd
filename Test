@@ -1,0 +1,2 @@
+workspace.Props.Model.Part.Tag:GetChildren()[3].DisplayName
+--[ DisplayName = Nama Event (TextLabel), Part = Object ]--
