@@ -166,6 +166,49 @@ local Origin_OnChange = ClientReplion.OnChange
 local Origin_Send = FishingController.SendFishingRequestToServer
 local Origin_Click = FishingController.RequestFishingMinigameClick
 local Origin_Stop = FishingController.FishingStopped
+ClientReplion.GetExpect = function(self, path, ...)
+    if tostring(path) == "AutoFishing" and MainToggle.AutoFishing and MainVariable.ModeFishing == "Legit" then
+        return true
+    end
+    return Origin_GetExpect(self, path, ...)
+end
+ClientReplion.Get = function(self, path, ...)
+    if tostring(path) == "AutoFishing" and MainToggle.AutoFishing and MainVariable.ModeFishing == "Legit" then
+        return true
+    end
+    return Origin_Get(self, path, ...)
+end
+ClientReplion.OnChange = function(self, path, ...)
+    if tostring(path) == "AutoFishing" and MainToggle.AutoFishing and MainVariable.ModeFishing == "Legit" then
+        return true
+    end
+    return Origin_OnChange(self, path, ...)
+end
+FishingController.SendFishingRequestToServer = function(self, pos, power, ...)
+    if MainToggle.AutoFishing then
+        power = 1
+    end
+    local result = {Origin_Send(self, pos, power, ...)}
+    MainVariable.MinigameActive = true
+    task.spawn(function()
+        while MainVariable.MinigameActive and MainToggle.AutoFishing and MainVariable.ModeFishing == "Legit" do
+            FishingController.RequestFishingMinigameClick()
+            task.wait(0.1)
+        end
+    end)
+    return unpack(result)
+end
+FishingController.RequestFishingMinigameClick = function(self, ...)
+    if MainToggle.InstantCatch then
+        return Net:WaitForChild("RF/FishingCompleted"):InvokeServer()
+    end
+    return Origin_Click(self, ...)
+end
+FishingController.FishingStopped = function(self, ...)
+    MainVariable.MinigameActive = false
+    return Origin_Stop(self, ...)
+end
+
 Functions.LegitMode = function()
     if not MainToggle.AutoFishing then
         ClientReplion.GetExpect = Origin_GetExpect
@@ -499,13 +542,6 @@ RunFunctions.AutoFishing = function(state)
         Functions.HookFishingController()
         while MainToggle.AutoFishing do
             if alreadydo == 0 and MainVariable.ModeFishing == "Legit" and not MainVariable.StillFishing and not workspace.CosmeticFolder:FindFirstChild(tostring(LocalPlayer.UserId)) then
-                local success, err = pcall(function()
-                    Functions.LegitMode()
-                end)
-                if not success then
-                    print("[DEBUG] Fishing Legit Mode Error : " .. err)
-                    MainVariable.StillFishing = false
-                end
                 alreadydo = alreadydo + 1
             elseif MainVariable.ModeFishing == "Remote" and not MainVariable.StillFishing then
                 if alreadydo >= 0 then
@@ -648,6 +684,31 @@ RunFunctions.TeleportToIsland = function()
     end
 end
 
+local eventcon
+RunFunctions.TeleportToEvent = function(state)
+    MainToggle.TeleportToEvent = state
+    if MainToggle.TeleportToEvent then
+        for _, v in pairs(workspace:GetChildren()) do 
+            if v.Name == "Props" then
+                for _, display in pairs(v:GetDescendants()) do 
+                    if v.Name == "DisplayName" and v:IsA("TextLabel") then 
+                        MainVariable.PositionEvent = v:GetPivot().Position or v.Position
+                    end
+                end
+            end
+        end
+        eventcon = workspace.ChildAdded:Connect(function(v)
+            if v.Name == "Props" then
+                for _, display in pairs(v:GetDescendants()) do 
+                    if v.Name == "DisplayName" and v:IsA("TextLabel") then 
+                        MainVariable.PositionEvent = v:GetPivot().Position or v.Position
+                    end
+                end
+            end
+        end)
+        while MainToggle.TeleportToEvent do 
+            if Character.Humanoid.Position 
+        
 local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/Nevcit/UI-Library/refs/heads/main/Loadstring/Fluent1.2.2.lua"))()
 
 local Window = Fluent:CreateWindow({
